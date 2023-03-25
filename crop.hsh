@@ -1,0 +1,56 @@
+#!/usr/bin/env hush
+
+std.export("PERL_UNICODE", "CSAD") # Otherwise Perl can't parse UTF-8, and regex doesn't work
+std.export("PERL5OPTS", "-Mutf8 -CA -Mwarnings=FATAL,utf8")
+
+let timestamp_regex = std.regex("\\d{2}:\\d{2}:\\d{2}(\\.\\d)?")
+std.assert(std.type(timestamp_regex) != "error")
+
+
+if(std.len(std.args()) == 0) then
+    std.println("You should provide filename and intervals (their begin and end timestamps). Got 0 (zero) arguments")
+    std.exit(255)
+end
+
+if(std.len(std.args()) % 2 != 1) then
+    std.println("You should provide filename and intervals (their begin and end timestamps). Number of args should be even, but it is ", std.len(std.args()))
+    std.exit(255)
+end
+
+for i in std.range(1, std.len(std.args()), 1) do
+    let arg = std.args()[i]
+    if(not timestamp_regex.match(arg)) then
+        std.println("You should provide timestamps in format HH:MM:SS.ms (milliseconds part is optional). But following argument doesn't match: ", arg)
+        std.exit(255)
+    end
+end
+
+let filename_in = std.args()[0]
+
+let file_exists = {stat ${filename_in} > /dev/null}
+if (std.type(file_exists) == "error") then
+    std.println("Provided input file doesn't exist: ", filename_in)
+    std.exit(255)
+end
+
+std.assert(std.len(std.args()) == 3)
+let begin_timestamp = std.args()[1]
+let end_timestamp = std.args()[2]
+let result = {
+
+mkdir -p tmp;
+
+ffmpeg -i ${filename_in} -ss ${begin_timestamp} -to ${end_timestamp} -an -c:v libx264 tmp/1.avi;
+ffmpeg -i ${filename_in} -ss ${begin_timestamp} -to ${end_timestamp} -vn -c:a copy tmp/1.aac;
+ffmpeg -i tmp/1.avi -i tmp/1.aac -c:v copy -c:a aac out.mp4;
+#ffmpeg -f concat -safe 0 -i list.txt -c copy ex_mrgd.mp4;
+
+}
+
+{
+    rm -rf tmp;
+}
+
+if std.type(result) == "error" then
+    std.println("Error: ", result)
+end
