@@ -42,7 +42,7 @@ mkdir -p tmp;
 
 ffmpeg -i ${filename_in} -ss ${begin_timestamp} -to ${end_timestamp} -an -c:v libx264 tmp/1.avi;
 ffmpeg -i ${filename_in} -ss ${begin_timestamp} -to ${end_timestamp} -vn -c:a copy tmp/1.aac;
-ffmpeg -i tmp/1.avi -i tmp/1.aac -c:v copy -c:a aac out.mp4;
+ffmpeg -y -i tmp/1.avi -i tmp/1.aac -c:v copy -c:a aac out.mp4;
 #ffmpeg -f concat -safe 0 -i list.txt -c copy ex_mrgd.mp4;
 
 }
